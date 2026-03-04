@@ -9,7 +9,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git 'https://github.com/hyeegood/spring-vue-cicd-test.git'
+                git branch: 'main', git 'https://github.com/hyeegood/spring-vue-cicd-test.git'
             }
         }
 
