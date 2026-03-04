@@ -16,6 +16,7 @@ pipeline {
         stage('Backend Build') {
             steps {
                 dir('backend') {
+                    sh 'chmod +x gradlew'
                     sh './gradlew build'
                 }
             }
