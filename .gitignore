@@ -8,6 +8,8 @@ backend/out/
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
+stock-platform/frontend-vue/node_modules/
+stock-platform/frontend-vue/dist/
 *.local
 
 # Logs
@@ -33,3 +35,10 @@ pnpm-debug.log*
 .env
 .env.local
 .env.*.local
+
+# Stock platform backend
+**/__pycache__/
+*.pyc
+stock-platform/backend/__pycache__/
+stock-platform/backend/*.db
+stock-platform/backend/.env
