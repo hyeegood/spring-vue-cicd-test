@@ -14,17 +14,10 @@ pipeline {
         }
 
         stage('Frontend Build') {
-            agent {
-                docker {
-                    image 'node:20-alpine'
-                    reuseNode true
-                }
-            }
             steps {
-                dir('frontend') {
-                    sh 'npm install'
-                    sh 'npm run build'
-                }
+                sh '''
+                docker run --rm -v "${WORKSPACE}:/workspace" -w /workspace/frontend node:20-alpine sh -c "npm install && npm run build"
+                '''
             }
         }
 
