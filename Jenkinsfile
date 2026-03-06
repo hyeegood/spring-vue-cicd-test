@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
     environment {
         APP_SERVER = "ec2-user@54.252.156.1"
     }
@@ -28,12 +32,12 @@ pipeline {
             }
         }
 
-       stage('Deploy to App Server') {
+        stage('Deploy to App Server') {
             steps {
                 sh '''
-                docker save cicd-test | ssh -i /var/jenkins_home/dev-ec2-key.pem ec2-user@54.252.156.1 docker load
+                docker save cicd-test | ssh -i /var/jenkins_home/dev-ec2-key.pem $APP_SERVER docker load
 
-                ssh -i /var/jenkins_home/dev-ec2-key.pem ec2-user@54.252.156.1 "
+                ssh -i /var/jenkins_home/dev-ec2-key.pem $APP_SERVER "
                     docker stop cicd-test || true
                     docker rm cicd-test || true
                     docker run -d -p 8080:8080 --name cicd-test cicd-test
