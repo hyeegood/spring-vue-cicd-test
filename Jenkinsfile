@@ -25,6 +25,7 @@ pipeline {
         stage('Copy Frontend') {
             steps {
                 sh '''
+                mkdir -p backend/src/main/resources/static
                 rm -rf backend/src/main/resources/static/*
                 cp -r frontend/dist/* backend/src/main/resources/static/
                 '''
