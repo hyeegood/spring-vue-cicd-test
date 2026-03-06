@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    options {
-        skipDefaultCheckout(true)
-    }
-
     environment {
         APP_SERVER = "ec2-user@54.252.156.1"
     }
@@ -14,6 +10,24 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/hyeegood/spring-vue-cicd-test.git'
+            }
+        }
+
+        stage('Frontend Build') {
+            steps {
+                dir('frontend') {
+                    sh 'npm install'
+                    sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Copy Frontend') {
+            steps {
+                sh '''
+                rm -rf backend/src/main/resources/static/*
+                cp -r frontend/dist/* backend/src/main/resources/static/
+                '''
             }
         }
 
@@ -32,7 +46,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to App Server') {
+        stage('Deploy') {
             steps {
                 sh '''
                 docker save cicd-test | ssh -i /var/jenkins_home/dev-ec2-key.pem $APP_SERVER docker load
