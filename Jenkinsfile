@@ -16,7 +16,12 @@ pipeline {
         stage('Frontend Build') {
             steps {
                 sh '''
-                docker run --rm -v "${WORKSPACE}:/workspace" -w /workspace/frontend node:20-alpine sh -c "npm install && npm run build"
+                set -e
+                CID=$(docker create -w /app node:20-alpine sh -c "npm install && npm run build")
+                docker cp frontend/. "$CID:/app/"
+                docker start -a "$CID"
+                docker cp "$CID:/app/dist" frontend/
+                docker rm "$CID" 2>/dev/null || true
                 '''
             }
         }
