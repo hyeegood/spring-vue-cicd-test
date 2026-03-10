@@ -3,8 +3,6 @@ pipeline {
 
     environment {
         APP_SERVER = "ec2-user@54.252.156.1"
-        SSH_KEY = "/var/jenkins_home/dev-ec2-key.pem"
-        IMAGE_NAME = "cicd-test"
     }
 
     stages {
@@ -17,19 +15,28 @@ pipeline {
 
         stage('Frontend Build') {
             steps {
-                dir('stock-platform/frontend-vue') {
-                    sh '''
-                    npm install
-                    npm run build
-                    '''
-                }
+                sh '''
+                set -e
+
+                CID=$(docker create -w /app node:20-alpine sh -c "npm install && npm run build")
+
+                docker cp stock-platform/frontend-vue/. "$CID:/app/"
+
+                docker start -a "$CID"
+
+                docker cp "$CID:/app/dist" stock-platform/frontend-vue/
+
+                docker rm "$CID" 2>/dev/null || true
+                '''
             }
         }
 
-        stage('Copy Frontend to Spring Static') {
+        stage('Copy Frontend') {
             steps {
                 sh '''
+                mkdir -p backend/src/main/resources/static
                 rm -rf backend/src/main/resources/static/*
+
                 cp -r stock-platform/frontend-vue/dist/* backend/src/main/resources/static/
                 '''
             }
@@ -38,44 +45,31 @@ pipeline {
         stage('Backend Build') {
             steps {
                 dir('backend') {
-                    sh '''
-                    chmod +x gradlew
-                    ./gradlew clean build -x test
-                    '''
+                    sh 'chmod +x gradlew'
+                    sh './gradlew build'
                 }
             }
         }
 
         stage('Docker Build') {
             steps {
-                sh '''
-                docker build -t $IMAGE_NAME .
-                '''
+                sh 'docker build -t cicd-test .'
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Deploy') {
             steps {
                 sh '''
-                docker save $IMAGE_NAME | ssh -i $SSH_KEY $APP_SERVER docker load
+                docker save cicd-test | ssh -i /var/jenkins_home/dev-ec2-key.pem $APP_SERVER docker load
 
-                ssh -i $SSH_KEY $APP_SERVER "
-                    docker stop $IMAGE_NAME || true
-                    docker rm $IMAGE_NAME || true
-                    docker run -d -p 8080:8080 --name $IMAGE_NAME $IMAGE_NAME
+                ssh -i /var/jenkins_home/dev-ec2-key.pem $APP_SERVER "
+                    docker stop cicd-test || true
+                    docker rm cicd-test || true
+                    docker run -d -p 8080:8080 --name cicd-test cicd-test
                 "
                 '''
             }
         }
 
-    }
-
-    post {
-        success {
-            echo "Deploy success"
-        }
-        failure {
-            echo "Deploy failed"
-        }
     }
 }
